@@ -22,9 +22,9 @@
 	<form>
 		<fieldset>
 			<legend>Options</legend>
-			<div style="display: none;"><label><input type="radio" id="VaultOnly" name="SelectedData" value="vault" <?php if ($_GET["SelectedData"] == 'vaultOnly') {echo "checked";} ?>>Vault Data</label> <a href="https://docs.google.com/spreadsheets/d/1bYi_-XApwf_avyIuExGULdWa4oxzLr7upelAtRq38TA/edit#gid=710933392">https://docs.google.com/spreadsheets/d/1bYi_-XApwf_avyIuExGULdWa4oxzLr7upelAtRq38TA/edit#gid=710933392</a><br></div>
+			<div style="display: none;"><label><input type="radio" id="VaultOnly" name="SelectedData" value="vault" <?php if ($_GET["SelectedData"] == 'vaultOnly') {echo "checked";} ?>>Vault Data</label></div>
 			<div><label><input type="radio" id="VerifiedOnly" name="SelectedData" value="verified" <?php if ($_GET["SelectedData"] == 'verifiedOnly' || $_GET["SelectedData"] == '') {echo "checked";} ?>>Cor's Compiled Masterlist</label> <a href="https://docs.google.com/spreadsheets/d/1Z16lZS_Uo-Go9hyxxY3oZlFqObkGpgmThSvJUrwSBFk/edit?usp=sharing">https://docs.google.com/spreadsheets/d/1Z16lZS_Uo-Go9hyxxY3oZlFqObkGpgmThSvJUrwSBFk/edit?usp=sharing</a></div><br>
-			<div style="display:none;"><label><input type="radio" id="MasterOnly" name="SelectedData" value="master"<?php if ($_GET["SelectedData"] == 'masterOnly') {echo "checked";} ?>>Currently Private Sheet</div><br>
+			<div><label><input type="radio" id="MasterOnly" name="SelectedData" value="master"<?php if ($_GET["SelectedData"] == 'masterOnly') {echo "checked";} ?>>Currently Private Sheet</div><br>
 			<div><label><input type="radio" id="Proof" name="SelectedData" value="proof"<?php if ($_GET["SelectedData"] == 'Proof') {echo "checked";} ?>>Proof</label></div><br>
 			<div><label><input type="checkbox" id="ExtraSymbols" name="ExtraSymbols" <?php if ($_GET["ExtraSymbols"] == 'true') {echo "checked";} ?>>Show Side Symbols</label></div><br>
 			<div>Min Cluster Size <input type="number" id="NodeCount" name="NodeCount" placeholder="2" value="<?php echo $_GET["NodeCount"]; ?>"></div><br>
@@ -74,6 +74,7 @@
 			var nodes = [];
 			var nodeSignature = {};
 			var size = sideSymbols? 80 : 30;
+			var hexArray = {};
 
 			var xmlhttp = new XMLHttpRequest();
 			xmlhttp.onreadystatechange = function() {
@@ -168,8 +169,13 @@
 					head.subNodes.forEach(function(subNode) {
 						simpleSubNodes.push(subNode.code);
 					});
+					
+					head.positionX = 0;
+					head.positionY = 0;
+
+					hexArray[head.positionX + "," + head.positionY] = [head];
 					hexagonNode.push([head.x, head.y, head.openSides, head.symbol, head.id, head.corridorLink, size, simpleSubNodes]);
-					drawSolution(head, nodes, size, hexagonNode);
+					drawSolution(head, nodes, size, hexagonNode, hexArray);
 					cluster.push(hexagonNode);
 					canvasNum++;
 				}
@@ -208,7 +214,6 @@
 						canvas.style.border = "1px solid";
 						canvas.classList.add("canvas");
 						canvas.classList.add("nodes-"+(clust.length));
-
 
 						var canvasElement = document.getElementById("canvases");
 						canvasElement.appendChild(canvas);
@@ -260,7 +265,7 @@
 				xmlhttp.send();
 			} 
 			else if (masterOnly) { 
-				xmlhttp.open("GET", "", true);
+				xmlhttp.open("GET", "https://spreadsheets.google.com/feeds/cells/1ykaQALnNF4S33ZrLeXF1RSzygCLyHugoZmgoPwogZI0/2/public/full?alt=json", true);
 				xmlhttp.send();
 			} 
 			else if (proof) {
@@ -271,7 +276,7 @@
 				xmlhttp.send();
 			}
 		}
-		function drawSolution(head, targetNodes, size, hexagonNode) {
+		function drawSolution(head, targetNodes, size, hexagonNode, hexArray) {
 			for (var i=0; i<targetNodes.length; i++) {
 				nodeTested = targetNodes[i];
 				newX = head.x;
@@ -279,46 +284,82 @@
 				var moveSize = size + 2;
 				var moveY = moveSize * Math.sqrt(3);
 				var moveX = moveSize + moveSize/2;
+
 				var foundMatch = false;
+				var headXEven = (head.positionX % 2) == 0;
 				if (!head.subNodes[0].linkedNode && (head.subNodes[0].code || nodeTested.subNodes[3].code) && head.subNodes[0].code == nodeTested.subNodes[3].code) {
+					nodeTested.positionX = head.positionX;
+					nodeTested.positionY = head.positionY -1;
+
 					head.subNodes[0].linkedNode = targetNodes.splice(i,1);
 					nodeTested.subNodes[3].linkedNode = head;
 					foundMatch = true;
 					newY = newY - moveY;
 				} else if (!head.subNodes[1].linkedNode && (head.subNodes[1].code || nodeTested.subNodes[4].code)  && head.subNodes[1].code == nodeTested.subNodes[4].code) {
+					nodeTested.positionX = head.positionX + 1;
+					nodeTested.positionY = head.positionY - (headXEven?1:0);
+
 					head.subNodes[1].linkedNode = targetNodes.splice(i,1);
 					nodeTested.subNodes[4].linkedNode = head;
 					foundMatch = true;
 					newX = newX + moveX;
 					newY = newY - (moveY/2);
 				} else if (!head.subNodes[2].linkedNode && (head.subNodes[2].code || nodeTested.subNodes[5].code)  && head.subNodes[2].code == nodeTested.subNodes[5].code) {
+					nodeTested.positionX = head.positionX + 1;
+					nodeTested.positionY = head.positionY + (!headXEven?1:0);
+
 					head.subNodes[2].linkedNode = targetNodes.splice(i,1);
 					nodeTested.subNodes[5].linkedNode = head;
 					foundMatch = true;
 					newX = newX + moveX;
 					newY = newY + (moveY/2);
 				} else if (!head.subNodes[3].linkedNode && (head.subNodes[3].code || nodeTested.subNodes[0].code)  && head.subNodes[3].code == nodeTested.subNodes[0].code) {
+					nodeTested.positionX = head.positionX;
+					nodeTested.positionY = head.positionY + 1;
+
 					head.subNodes[3].linkedNode = targetNodes.splice(i,1);
 					nodeTested.subNodes[0].linkedNode = head;
 					foundMatch = true;
 					newY = newY + moveY;
 				} else if (!head.subNodes[4].linkedNode && (head.subNodes[4].code || nodeTested.subNodes[1].code)  && head.subNodes[4].code == nodeTested.subNodes[1].code) {
+					nodeTested.positionX = head.positionX - 1;
+					nodeTested.positionY = head.positionY + (!headXEven?1:0);
+
 					head.subNodes[4].linkedNode = targetNodes.splice(i,1);
 					nodeTested.subNodes[1].linkedNode = head;
 					foundMatch = true;
 					newX = newX - moveX;
 					newY = newY + (moveY/2);
 				} else if (!head.subNodes[5].linkedNode && (head.subNodes[5].code || nodeTested.subNodes[2].code)  && head.subNodes[5].code == nodeTested.subNodes[2].code) {
+					nodeTested.positionX = head.positionX - 1;
+					nodeTested.positionY = head.positionY - (headXEven?1:0);
+
 					head.subNodes[5].linkedNode = targetNodes.splice(i,1);
 					nodeTested.subNodes[2].linkedNode = head;
 					foundMatch = true;
 					newX = newX - moveX;
 					newY = newY - (moveY/2);
 				}
-
 				if (foundMatch) {
 					nodeTested.x = newX;
 					nodeTested.y = newY;
+					var hexKey = nodeTested.positionX + "," + nodeTested.positionY;
+					if (typeof hexArray[hexKey] !== 'undefined') {
+						hexArray[hexKey].push(nodeTested);
+						console.log("Conflict: ")
+						//console.log(hexArray[hexKey]);
+						hexArray[hexKey].forEach(function(confNode) {
+							var sideLayout = "";
+							confNode.subNodes.forEach(function(side){
+								sideLayout+=side.code+" ";
+							});
+							console.log(sideLayout + " " + confNode.id);
+						});
+					} else {
+						hexArray[hexKey] = [];
+						hexArray[hexKey].push(nodeTested);
+					}
+					
 					try {
 						var simpleSubNodes = [];
 						nodeTested.subNodes.forEach(function(subNode) {
@@ -326,10 +367,9 @@
 						});
 						hexagonNode.push([nodeTested.x, nodeTested.y, nodeTested.openSides, nodeTested.symbol, nodeTested.id, nodeTested.corridorLink, size, simpleSubNodes]);
 					} catch (e) {}
-					drawSolution(nodeTested, targetNodes, size, hexagonNode);
+					drawSolution(nodeTested, targetNodes, size, hexagonNode, hexArray);
 				}
 			}
-
 
 		}
 
@@ -434,3 +474,11 @@
 </body>
 
 </html>
+
+
+
+
+
+
+
+First

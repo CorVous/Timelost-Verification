@@ -283,35 +283,35 @@
 				var moveX = moveSize + moveSize/2;
 				var foundMatch = false;
 				if (!head.subNodes[0].linkedNode && (head.subNodes[0].code || nodeTested.subNodes[3].code) && head.subNodes[0].code == nodeTested.subNodes[3].code) {
-					head.subNodes[0].linkedNode = targetNodes.splice(i,1);
+					head.subNodes[0].linkedNode = targetNodes[i];
 					nodeTested.subNodes[3].linkedNode = head;
 					foundMatch = true;
 					newY = newY - moveY;
 				} else if (!head.subNodes[1].linkedNode && (head.subNodes[1].code || nodeTested.subNodes[4].code)  && head.subNodes[1].code == nodeTested.subNodes[4].code) {
-					head.subNodes[1].linkedNode = targetNodes.splice(i,1);
+					head.subNodes[1].linkedNode = targetNodes[i];
 					nodeTested.subNodes[4].linkedNode = head;
 					foundMatch = true;
 					newX = newX + moveX;
 					newY = newY - (moveY/2);
 				} else if (!head.subNodes[2].linkedNode && (head.subNodes[2].code || nodeTested.subNodes[5].code)  && head.subNodes[2].code == nodeTested.subNodes[5].code) {
-					head.subNodes[2].linkedNode = targetNodes.splice(i,1);
+					head.subNodes[2].linkedNode = targetNodes[i];
 					nodeTested.subNodes[5].linkedNode = head;
 					foundMatch = true;
 					newX = newX + moveX;
 					newY = newY + (moveY/2);
 				} else if (!head.subNodes[3].linkedNode && (head.subNodes[3].code || nodeTested.subNodes[0].code)  && head.subNodes[3].code == nodeTested.subNodes[0].code) {
-					head.subNodes[3].linkedNode = targetNodes.splice(i,1);
+					head.subNodes[3].linkedNode = targetNodes[i];
 					nodeTested.subNodes[0].linkedNode = head;
 					foundMatch = true;
 					newY = newY + moveY;
 				} else if (!head.subNodes[4].linkedNode && (head.subNodes[4].code || nodeTested.subNodes[1].code)  && head.subNodes[4].code == nodeTested.subNodes[1].code) {
-					head.subNodes[4].linkedNode = targetNodes.splice(i,1);
+					head.subNodes[4].linkedNode = targetNodes[i];
 					nodeTested.subNodes[1].linkedNode = head;
 					foundMatch = true;
 					newX = newX - moveX;
 					newY = newY + (moveY/2);
 				} else if (!head.subNodes[5].linkedNode && (head.subNodes[5].code || nodeTested.subNodes[2].code)  && head.subNodes[5].code == nodeTested.subNodes[2].code) {
-					head.subNodes[5].linkedNode = targetNodes.splice(i,1);
+					head.subNodes[5].linkedNode = targetNodes[i];
 					nodeTested.subNodes[2].linkedNode = head;
 					foundMatch = true;
 					newX = newX - moveX;
