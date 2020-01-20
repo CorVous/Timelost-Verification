@@ -25,9 +25,9 @@
 			<div"><label><input type="radio" id="VaultOnly" name="SelectedData" value="vault" <?php if ($_GET["SelectedData"] == 'vaultOnly' || $_GET["SelectedData"] == '') {echo "checked";} ?>></label> <a href="http://helposiris.com/">HelpOsiris.com</a></div><br><br>
 			<div><label><input type="radio" id="VerifiedOnly" name="SelectedData" value="verified" <?php if ($_GET["SelectedData"] == 'verifiedOnly') {echo "checked";} ?>>Explorer's Vault</label> <a href="https://docs.google.com/spreadsheets/d/1Cs-wnM6cJMfL_gpoGzqLiqtQQSEXH_eSR4T-nuyUvNs/edit#gid=0">https://docs.google.com/spreadsheets/d/1Cs-wnM6cJMfL_gpoGzqLiqtQQSEXH_eSR4T-nuyUvNs/edit#gid=0</a></div><br>
 			<div><label><input type="radio" id="MasterOnly" name="SelectedData" value="master"<?php if ($_GET["SelectedData"] == 'masterOnly') {echo "checked";} ?>> Bachmanetti Compilation</label> <a href="https://docs.google.com/spreadsheets/d/1ykaQALnNF4S33ZrLeXF1RSzygCLyHugoZmgoPwogZI0/edit?usp=sharing">https://docs.google.com/spreadsheets/d/1ykaQALnNF4S33ZrLeXF1RSzygCLyHugoZmgoPwogZI0/edit?usp=sharing</a></div><br>
-			<div><label><input type="radio" id="Proof" name="SelectedData" value="proof"<?php if ($_GET["SelectedData"] == 'proof') {echo "checked";} ?>>Proof</label></div><br>
+			<div style="display: none;"><label><input type="radio" id="Proof" name="SelectedData" value="proof"<?php if ($_GET["SelectedData"] == 'proof') {echo "checked";} ?>>Proof</label></div><br>
 			<div><label><input type="checkbox" id="ExtraSymbols" name="ExtraSymbols" <?php if ($_GET["ExtraSymbols"] == 'true') {echo "checked";} ?>>Show Side Symbols</label></div><br>
-			<div>Min Cluster Size <input type="number" id="NodeCount" name="NodeCount" placeholder="1" value="<?php echo $_GET["NodeCount"]; ?>"></div><br>
+			<div style="display: none;">Min Cluster Size <input type="number" id="NodeCount" name="NodeCount" placeholder="1" value="<?php echo $_GET["NodeCount"]; ?>"></div><br>
 			<!--<div>JSON Import<br><textarea id="JsonInput" name="JsonInput"></textarea></div><br>-->
 			<input id="load-button" type="button" onclick="load()" value="Load Data">
 		</fieldset>
@@ -49,11 +49,14 @@
 		class SubNode {
 			constructor(code = "") {
 				this.code = code;
+				// this.linkedNode
 			}
 		}
 
 		var linkDict = {};
-		var hexArray = {};
+		var hexArray = [];
+		var height = 84;
+		var width = 60;
 
 		function load() {
 			var verifiedOnly = document.getElementById("VerifiedOnly").checked;
@@ -78,7 +81,7 @@
 			var nodes = [];
 			var nodeSignature = {};
 			var size = sideSymbols? 80 : 10;
-			hexArray = {};
+			hexArray = [];
 			var conflictErrors = "";
 			linkDict = {};
 
@@ -100,33 +103,38 @@
 			    	}
 			    });
 
+			    var headNode;
 				dataTest.forEach(function(data) {
 					let signature = "";
 					var newSubNodes = [];
-					try {
-						var linkCount = 0;
-						data[0].nodes.forEach(function(subData){
-							linkCode = subData.join('');
-							if (linkCode == "BBBBBBB") {
-								var newSubNode = new SubNode();
-							} else {
-								if (linkDict[linkCount+linkCode]) {
-									linkDict[linkCount+linkCode]++;
-								} else {
-									linkDict[linkCount+linkCode] = 1;
-								}
-								var newSubNode = new SubNode(linkCode);
-							}
-							signature+=subData.join('');
-							newSubNodes.push(newSubNode);
-							linkCount++;
-						});
-					} catch(e) {
-						return;
-					}
-					
 					var newOpenSides = [];
+					var topLeftCorner = [true , true, false, false, true, true];
+					var isTopLeftCorner = true;
+
 					for(i=0; i<6; i++) {
+						// Place sides
+						subData = data[0].nodes[i];
+						linkCode = subData.join('');
+						if (linkCode == "BBBBBBB" || linkCode == "") {
+							var newSubNode = new SubNode();
+							linkCode = "";
+							if (!topLeftCorner[i]) {
+								isTopLeftCorner = false;
+							}
+						} else {
+							if (linkDict[i+linkCode]) {
+								linkDict[i+linkCode]++;
+							} else {
+								linkDict[i+linkCode] = 1;
+							}
+							var newSubNode = new SubNode(linkCode);
+							if (topLeftCorner[i]) {
+								isTopLeftCorner = false;
+							}
+						}
+						signature+=linkCode;
+						newSubNodes.push(newSubNode);
+
 						if (!data[0].walls[i]) {
 							signature+=i+1;
 							newOpenSides.push(i+1);
@@ -163,8 +171,13 @@
 					var newNode = new Node(data[0].row?data[0].row:data[1], newSubNodes, newOpenSides, newSymbol, corridors);
 					signature = signature.toUpperCase();
 					if (!nodeSignature[signature] && (data[0].status == "Verified" || !data[0].status)) {
+						//console.log(getEdgeType(newNode));
 						nodeSignature[signature] = data[1];
-						nodes.push(newNode);
+						if (isTopLeftCorner) {
+							headNode = newNode;
+						} else {
+							nodes.push(newNode);
+						}
 					} else {
 						//console.log("Duplicate found at: "+data[1]+". Original at: "+nodeSignature[signature]);
 					}
@@ -174,80 +187,35 @@
 
 				var canvasNum = 1;
 				var cluster = [];
-				while(nodes.length > 0) {
-					var head = nodes.shift();
-					head.x = 0;
-					head.y = 0;
 
-					var preNodeLength = nodes.length;
-					var hexagonNode = [];
-					var simpleSubNodes = [];
-					var hexArrayPiece = [];
-					head.subNodes.forEach(function(subNode) {
-						simpleSubNodes.push(subNode.code);
-					});
-					
-					head.positionX = 0;
-					head.positionY = 0;
+				var head = headNode;
+				head.x = 0;
+				head.y = 0;
 
-					hexArrayPiece[head.positionX + "," + head.positionY] = [head];
-					hexagonNode.push([head.x, head.y, head.openSides, head.symbol, head.id, head.corridorLink, size, simpleSubNodes]);
-					drawSolution(head, nodes, size, hexagonNode, hexArrayPiece);
-					cluster.push(hexagonNode);
-					hexArray.push(hexArray);
-					canvasNum++;
-				}
+				var preNodeLength = nodes.length;
+				var hexagonNode = [];
+				var simpleSubNodes = [];
+				var hexArrayPiece = [];
+				head.subNodes.forEach(function(subNode) {
+					simpleSubNodes.push(subNode.code);
+				});
+				
+				head.positionX = 0;
+				head.positionY = 0;
+
+				hexArrayPiece[head.positionX + "," + head.positionY] = head;
+				hexagonNode.push([head.x, head.y, head.openSides, head.symbol, head.id, head.corridorLink, size, simpleSubNodes]);
+				drawSolution(head, nodes, size, hexagonNode, hexArrayPiece);
+				cluster.push(hexagonNode);
+				hexArray.push(hexArrayPiece);
+				//console.log(hexArray);
+				canvasNum++;
 
 				// Draw
-				cluster.forEach(function(clust) {
-					if ((!clusterSize && clust.length > 1) || clust.length >= clusterSize) {
-						var padding = document.getElementById("ExtraSymbols").checked?200:100;
-						var furthestRight = 0;
-						var furthestLeft = 0;
-						var furthestUp = 0;
-						var furthestDown = 0;
-						clust.forEach(function(hexa) {
-							if (hexa[0] > 0 && hexa[0] > furthestRight) {
-								furthestRight = hexa[0];
-							} else if (hexa[0] < 0 && hexa[0] < furthestLeft) {
-								furthestLeft = hexa[0];
-							}
-
-							if (hexa[1] > 0 && hexa[1] > furthestDown) {
-								furthestDown = hexa[1];
-							} else if (hexa[1] < 0 && hexa[1] < furthestUp) {
-								furthestUp = hexa[1];
-							}
-						});
-
-						var offsetX = -furthestLeft + (padding/2);
-						var offestY = -furthestUp + (padding/2);
-						var canvasWidth = furthestRight - furthestLeft + padding;
-						var canvasHeight = furthestDown - furthestUp + padding;
-
-						var c = document.getElementById('myCanvas');
-						var canvas = document.createElement('canvas');
-						canvas.width = canvasWidth;
-						canvas.height = canvasHeight;
-						canvas.style.border = "2px solid";
-						canvas.classList.add("canvas");
-						canvas.classList.add("nodes-"+(clust.length));
-
-						var canvasElement = document.getElementById("canvases");
-						canvasElement.appendChild(canvas);
-
-						var ctx = canvas.getContext('2d');
-						ctx.fillStyle = "#ffffff";
-						ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-						clust.forEach(function(hexa) {
-							drawHexagon(hexa[0]+offsetX, hexa[1]+offestY, hexa[2], hexa[3], ctx, hexa[4], hexa[5], hexa[6], hexa[7], hexa[8]);
-						});
-						ctx.font = "10px Arial";
-						ctx.fillStyle = "#000000";
-						ctx.fillText(clust.length, 10, 10);
+				hexArray.forEach(function(hexGroup){
+					if (!clusterSize && hexGroup.length > 1 || hexArray.length >= clusterSize) {
+						drawCluster(hexGroup, size);
 					}
-
 				});
 
 				document.getElementById("load-button").style.display = "block";
@@ -270,6 +238,85 @@
 				xmlhttp.send();
 			}
 		}
+
+		function getEdgeType(node) {
+			edgeType = "none";
+			let edgeData = {
+				topLeftCorner: {pattern: [true , true, false, false, true, true], isTrue: true},
+				top1: {pattern: [true, false, false, false, false, false], isTrue: true},
+				top2: {pattern: [true, true, false, false, false, true], isTrue: true},
+				bottomRightCorner: {pattern: [false, true, true, true, true, false], isTrue: true},
+				bottom1: {pattern: [false, false, false, true, false, false], isTrue: true},
+				bottom2: {pattern: [false, false, true, true, true, false], isTrue: true},
+				right: {pattern: [false, true, true, false, false, false], isTrue: true},
+				left: {pattern: [false, false, false, false, true, true], isTrue: true}
+			}
+			for (let i = 0; i < 6; i++) {
+				for (key in edgeData) {
+					sideType = edgeData[key];
+					sideType.isTrue = sideType.pattern[i];
+					//console.log(!sideType.isTrue);
+				}
+			}
+			for (key in edgeData) {
+				if (edgeData[key].isTrue) {
+					return edgeType;
+				}
+			}
+			return edgeType;
+		}
+
+		function drawCluster(hexGroup, size) {
+			var padding = document.getElementById("ExtraSymbols").checked?200:100;
+			var furthestRight = 0;
+			var furthestLeft = 0;
+			var furthestUp = 0;
+			var furthestDown = 0;
+			for (hexaKey in hexGroup) {
+				hexa = hexGroup[hexaKey];
+				if (hexa.x > 0 && hexa.x > furthestRight) {
+					furthestRight = hexa.x;
+				} else if (hexa.x < 0 && hexa.x < furthestLeft) {
+					furthestLeft = hexa.x;
+				}
+
+				if (hexa.y > 0 && hexa.y > furthestDown) {
+					furthestDown = hexa.y;
+				} else if (hexa.y < 0 && hexa.y < furthestUp) {
+					furthestUp = hexa.y;
+				}
+			}
+			var offsetX = -furthestLeft + (padding/2);
+			var offsetY = -furthestUp + (padding/2);
+			var canvasWidth = furthestRight - furthestLeft + padding;
+			var canvasHeight = furthestDown - furthestUp + padding;
+
+			var c = document.getElementById('myCanvas');
+			var canvas = document.createElement('canvas');
+			canvas.width = canvasWidth;
+			canvas.height = canvasHeight;
+			canvas.style.border = "2px solid";
+			canvas.classList.add("canvas");
+
+			var canvasElement = document.getElementById("canvases");
+			canvasElement.appendChild(canvas);
+
+			var ctx = canvas.getContext('2d');
+			ctx.fillStyle = "#ffffff";
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			for (hexaKey in hexGroup) {
+				hexa = hexGroup[hexaKey];
+				hexa.x += offsetX;
+				hexa.y += offsetY;
+				//drawHexa(hexa.x+offsetX, hexa.y+offsetY, hexa[2], hexa[3], ctx, hexa[4], hexa[5], hexa[6], hexa[7], hexa[8]);
+				drawHexagon(hexa, ctx, size);
+			}
+			ctx.font = "10px Arial";
+			ctx.fillStyle = "#000000";
+			//ctx.fillText(hexGroup.length, 10, 10);
+		}
+
 		function drawSolution(head, targetNodes, size, hexagonNode, hexArray) {
 			for (var i=0; i<targetNodes.length; i++) {
 				nodeTested = targetNodes[i];
@@ -352,20 +399,24 @@
 					nodeTested.y = newY;
 					var hexKey = nodeTested.positionX + "," + nodeTested.positionY;
 					if (typeof hexArray[hexKey] !== 'undefined') {
-						hexArray[hexKey].push(nodeTested);
+						//hexArray[hexKey].push(nodeTested);
 						targetNodes.push(nodeTested);
 						conflictLog("Conflict: Overlap");
-						hexArray[hexKey].forEach(function(confNode) {
-							var sideLayout = "";
-							confNode.subNodes.forEach(function(side){
-								sideLayout+=side.code+" ";
-							});
-							conflictLog(sideLayout + " " + confNode.id);
+
+						var sideLayout = "";
+						nodeTested.subNodes.forEach(function(side){
+							sideLayout+=side.code+" ";
 						});
+						conflictLog(sideLayout + " " + nodeTested.id);
+
+						sideLayout = "";
+						hexArray[hexKey].subNodes.forEach(function(side){
+							sideLayout+=side.code+" ";
+						});
+						conflictLog(sideLayout + " " + hexArray[hexKey].id);
 						conflictLog("----------------");
 					} else if (arrayCheckSides(nodeTested, hexArray, sideIsUnique)) {
-						hexArray[hexKey] = [];
-						hexArray[hexKey].push(nodeTested);
+						hexArray[hexKey] = nodeTested;
 						try {
 							var simpleSubNodes = [];
 							nodeTested.subNodes.forEach(function(subNode) {
@@ -414,12 +465,12 @@
 						hexKey = (node.positionX - 1)+","+(node.positionY - (headXEven?1:0));
 						break;
 				}
-				var side = hexArray[hexKey]
+				var side = hexArray[hexKey];
 				if (hexKey in hexArray) {
 					hasSide[i] = true;
 					currentNeighbors++;
 					hasTrue[i] = false;
-					bNode = side[0];
+					bNode = side;
 					if (node.subNodes[i].code == bNode.subNodes[k].code) {
 						hasTrue = true;
 					} else {
@@ -437,7 +488,7 @@
 
 			if (sideIsUnique) {
 				return true;
-			} else if (!sideIsUnique && currentNeighbors>1) {
+			} else if (!sideIsUnique && currentNeighbors>2) {
 				return true;
 			}
 			return false;
@@ -445,20 +496,20 @@
 		}
 
 		// hexagon
-		function drawHexagon(x, y, omittedSides, symbol, ctx, id, link, size, subNodes) {
+		function drawHexagon(hexagon, ctx, size) {
 			sides = document.getElementById("ExtraSymbols").checked;
 			var numberOfSides = 6,
-			    Xcenter = x,
-			    Ycenter = y;
-			if (symbol) {
+			    Xcenter = hexagon.x,
+			    Ycenter = hexagon.y;
+			if (hexagon.symbol) {
 				if (sides) {
 			      	var img = new Image();
-			      	img.src = symbol+'.png';
+			      	img.src = hexagon.symbol+'.png';
 			      	var imgSize = 26;
 			      	var savectx = ctx;
 			      	img.onload = function() {
 			      		try {
-		  					savectx.drawImage(img, x-imgSize/2, y-imgSize/2, imgSize, imgSize);
+		  					savectx.drawImage(img, hexagon.x-imgSize/2, hexagon.y-imgSize/2, imgSize, imgSize);
 			      		} catch(e) {
 			      			return;
 			      		}
@@ -466,57 +517,48 @@
 			      } else {
 			      	ctx.fillStyle = "#000000";
 			      	ctx.font = "12px Arial";
-			      	var character = (symbol!="cauldron")?symbol.substr(0,1):"T";
-			      	ctx.fillText(character, x-5, y+5);
+			      	var character = (hexagon.symbol!="cauldron")?hexagon.symbol.substr(0,1):"T";
+			      	ctx.fillText(character, hexagon.x-5, hexagon.y+5);
 			      }
 			}
-
-			// try {
-			// 	ctx.fillStyle = "#000000"
-			// 	ctx.font = "12px Arial";
-			// 	ctx.fillText(id, x-10, y-14);
-			// } catch(e) {
-			// 	return;
-			// }
-
 
 	     	if (sides) {
 	 	     	ctx.font = "10px Arial";
 		     	ctx.save();
 
 	 	     	ctx.fillStyle = "#cc4444"
-	 			ctx.fillText(subNodes[0], x-25, y-58);
+	 			ctx.fillText(hexa.subNodes[0].code, hexagon.x-25, hexagon.y-58);
 
 	 			ctx.restore();
 	 			ctx.fillStyle = "#88cc88"
-	 			for(var i=0; i<subNodes[1].length; i++) {
-	 				var chara = subNodes[1][i];
-	 				ctx.fillText(chara, x+31+(i*5), y-60+(i*9));
+	 			for(var i=0; i<hexagon.subNodes[1].code.length; i++) {
+	 				var chara = hexagon.subNodes[1].code[i];
+	 				ctx.fillText(chara, hexagon.x+31+(i*5), hexagon.y-60+(i*9));
 	 			}
 
 	 			ctx.restore();
 	 	     	ctx.fillStyle = "#cc4444"
-	  			for(var i=0; i<subNodes[2].length; i++) {
-	 				var chara = subNodes[2][i];
-	 				ctx.fillText(chara, x+35+(i*5), y+65-(i*9));
+	  			for(var i=0; i<hexagon.subNodes[2].code.length; i++) {
+	 				var chara = hexagon.subNodes[2].code[i];
+	 				ctx.fillText(chara, hexagon.x+35+(i*5), hexagon.y+65-(i*9));
 	 			}
 
 	 			ctx.restore();
 	 			ctx.fillStyle = "#44cc44"
-	 			ctx.fillText(subNodes[3], x-25, y+65);
+	 			ctx.fillText(hexagon.subNodes[3].code, hexagon.x-25, hexagon.y+65);
 
 	 			ctx.restore();
 	 	     	ctx.fillStyle = "#cc4444"
-	  			for(var i=0; i<subNodes[4].length; i++) {
-	 				var chara = subNodes[4][i];
-	 				ctx.fillText(chara, x-72+(i*5), y+10+(i*9));
+	  			for(var i=0; i<hexagon.subNodes[4].code.length; i++) {
+	 				var chara = hexagon.subNodes[4].code[i];
+	 				ctx.fillText(chara, hexagon.x-72+(i*5), hexagon.y+10+(i*9));
 	 			}
 
 	 			ctx.restore();
 	 			ctx.fillStyle = "#44cc44"
-	   			for(var i=0; i<subNodes[5].length; i++) {
-	 				var chara = subNodes[5][i];
-	 				ctx.fillText(chara, x-70+(i*5), y-6-(i*9));
+	   			for(var i=0; i<hexagon.subNodes[5].code.length; i++) {
+	 				var chara = hexagon.subNodes[5].code[i];
+	 				ctx.fillText(chara, hexagon.x-70+(i*5), hexagon.y-6-(i*9));
 	 			}
 
 	 			ctx.restore();
@@ -524,23 +566,6 @@
 
 	     	var currentX = Xcenter + size * Math.cos(0);
 	     	var currentY = Ycenter + size *  Math.sin(0);
-
-			// try {
-			// 	ctx.fillStyle = "#000000";
-			// 	ctx.beginPath();
-			// } catch (e) {
-			// 	return;
-			// }
-			// for (var i = 1; i <= numberOfSides; i+=1) {
-			// 	ctx.moveTo (currentX, currentY);
-			// 	var nextX = Xcenter + size * Math.cos(-i * 2 * Math.PI / numberOfSides);
-			// 	var nextY = Ycenter + size * Math.sin(i * 2 * Math.PI / numberOfSides);
-			// 	ctx.lineTo (nextX, nextY);
-			// 	currentX = nextX;
-			// 	currentY = nextY;
-			// 	ctx.closePath();
-			// }
-			// ctx.fill();
 
 			for (var i = 1; i <= numberOfSides; i+=1) {
 				try {
@@ -557,15 +582,15 @@
 				currentY = nextY;
 				ctx.lineWidth = 1;
 
-				if (subNodes[((i+7) % 6)] == "") {
+				if (hexa.subNodes[((i+7) % 6)].code == "") {
 					ctx.strokeStyle = "#00ff00";
-					if (omittedSides.includes(((i+7) % 6) + 1)) {
+					if (hexa.openSides.includes(((i+7) % 6) + 1)) {
 						ctx.lineWidth = 3;
 						ctx.strokeStyle = "#ff0000";
 					}
 				} else {
 					ctx.strokeStyle = "#000000";
-					if (omittedSides.includes(((i+7) % 6) + 1)) {
+					if (hexa.openSides.includes(((i+7) % 6) + 1)) {
 						ctx.strokeStyle = "#add8e6";
 					}
 				}

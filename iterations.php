@@ -55,6 +55,8 @@
 
 		var linkDict = {};
 		var hexArray = [];
+		var height = 84;
+		var width = 60;
 
 		function load() {
 			var verifiedOnly = document.getElementById("VerifiedOnly").checked;
@@ -137,10 +139,6 @@
 							signature+=i+1;
 							newOpenSides.push(i+1);
 						}
-					}
-
-					if (isTopLeftCorner) {
-						console.log(newSubNodes);
 					}
 
 					var newSymbol;
@@ -242,7 +240,30 @@
 		}
 
 		function getEdgeType(node) {
-			console.log(node);
+			edgeType = "none";
+			let edgeData = {
+				topLeftCorner: {pattern: [true , true, false, false, true, true], isTrue: true},
+				top1: {pattern: [true, false, false, false, false, false], isTrue: true},
+				top2: {pattern: [true, true, false, false, false, true], isTrue: true},
+				bottomRightCorner: {pattern: [false, true, true, true, true, false], isTrue: true},
+				bottom1: {pattern: [false, false, false, true, false, false], isTrue: true},
+				bottom2: {pattern: [false, false, true, true, true, false], isTrue: true},
+				right: {pattern: [false, true, true, false, false, false], isTrue: true},
+				left: {pattern: [false, false, false, false, true, true], isTrue: true}
+			}
+			for (let i = 0; i < 6; i++) {
+				for (key in edgeData) {
+					sideType = edgeData[key];
+					sideType.isTrue = sideType.pattern[i];
+					//console.log(!sideType.isTrue);
+				}
+			}
+			for (key in edgeData) {
+				if (edgeData[key].isTrue) {
+					return edgeType;
+				}
+			}
+			return edgeType;
 		}
 
 		function drawCluster(hexGroup, size) {
@@ -467,7 +488,7 @@
 
 			if (sideIsUnique) {
 				return true;
-			} else if (!sideIsUnique && currentNeighbors>1) {
+			} else if (!sideIsUnique && currentNeighbors>2) {
 				return true;
 			}
 			return false;
