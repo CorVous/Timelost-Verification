@@ -49,6 +49,7 @@
 		class SubNode {
 			constructor(code = "") {
 				this.code = code;
+				// this.linkedNode
 			}
 		}
 
@@ -100,37 +101,46 @@
 			    	}
 			    });
 
+			    var headNode;
 				dataTest.forEach(function(data) {
 					let signature = "";
 					var newSubNodes = [];
-					try {
-						var linkCount = 0;
-						data[0].nodes.forEach(function(subData){
-							linkCode = subData.join('');
-							if (linkCode == "BBBBBBB") {
-								var newSubNode = new SubNode();
-							} else {
-								if (linkDict[linkCount+linkCode]) {
-									linkDict[linkCount+linkCode]++;
-								} else {
-									linkDict[linkCount+linkCode] = 1;
-								}
-								var newSubNode = new SubNode(linkCode);
-							}
-							signature+=subData.join('');
-							newSubNodes.push(newSubNode);
-							linkCount++;
-						});
-					} catch(e) {
-						return;
-					}
-					
 					var newOpenSides = [];
+					var topLeftCorner = [true , true, false, false, true, true];
+					var isTopLeftCorner = true;
+
 					for(i=0; i<6; i++) {
+						// Place sides
+						subData = data[0].nodes[i];
+						linkCode = subData.join('');
+						if (linkCode == "BBBBBBB" || linkCode == "") {
+							var newSubNode = new SubNode();
+							linkCode = "";
+							if (!topLeftCorner[i]) {
+								isTopLeftCorner = false;
+							}
+						} else {
+							if (linkDict[i+linkCode]) {
+								linkDict[i+linkCode]++;
+							} else {
+								linkDict[i+linkCode] = 1;
+							}
+							var newSubNode = new SubNode(linkCode);
+							if (topLeftCorner[i]) {
+								isTopLeftCorner = false;
+							}
+						}
+						signature+=linkCode;
+						newSubNodes.push(newSubNode);
+
 						if (!data[0].walls[i]) {
 							signature+=i+1;
 							newOpenSides.push(i+1);
 						}
+					}
+
+					if (isTopLeftCorner) {
+						console.log(newSubNodes);
 					}
 
 					var newSymbol;
@@ -163,8 +173,13 @@
 					var newNode = new Node(data[0].row?data[0].row:data[1], newSubNodes, newOpenSides, newSymbol, corridors);
 					signature = signature.toUpperCase();
 					if (!nodeSignature[signature] && (data[0].status == "Verified" || !data[0].status)) {
+						console.log(getEdgeType(newNode));
 						nodeSignature[signature] = data[1];
-						nodes.push(newNode);
+						if (isTopLeftCorner) {
+							headNode = newNode;
+						} else {
+							nodes.push(newNode);
+						}
 					} else {
 						//console.log("Duplicate found at: "+data[1]+". Original at: "+nodeSignature[signature]);
 					}
@@ -174,30 +189,29 @@
 
 				var canvasNum = 1;
 				var cluster = [];
-				while(nodes.length > 0) {
-					var head = nodes.shift();
-					head.x = 0;
-					head.y = 0;
 
-					var preNodeLength = nodes.length;
-					var hexagonNode = [];
-					var simpleSubNodes = [];
-					var hexArrayPiece = [];
-					head.subNodes.forEach(function(subNode) {
-						simpleSubNodes.push(subNode.code);
-					});
-					
-					head.positionX = 0;
-					head.positionY = 0;
+				var head = headNode;
+				head.x = 0;
+				head.y = 0;
 
-					hexArrayPiece[head.positionX + "," + head.positionY] = head;
-					hexagonNode.push([head.x, head.y, head.openSides, head.symbol, head.id, head.corridorLink, size, simpleSubNodes]);
-					drawSolution(head, nodes, size, hexagonNode, hexArrayPiece);
-					cluster.push(hexagonNode);
-					hexArray.push(hexArrayPiece);
-					//console.log(hexArray);
-					canvasNum++;
-				}
+				var preNodeLength = nodes.length;
+				var hexagonNode = [];
+				var simpleSubNodes = [];
+				var hexArrayPiece = [];
+				head.subNodes.forEach(function(subNode) {
+					simpleSubNodes.push(subNode.code);
+				});
+				
+				head.positionX = 0;
+				head.positionY = 0;
+
+				hexArrayPiece[head.positionX + "," + head.positionY] = head;
+				hexagonNode.push([head.x, head.y, head.openSides, head.symbol, head.id, head.corridorLink, size, simpleSubNodes]);
+				drawSolution(head, nodes, size, hexagonNode, hexArrayPiece);
+				cluster.push(hexagonNode);
+				hexArray.push(hexArrayPiece);
+				//console.log(hexArray);
+				canvasNum++;
 
 				// Draw
 				hexArray.forEach(function(hexGroup){
@@ -227,13 +241,16 @@
 			}
 		}
 
+		function getEdgeType(node) {
+			console.log(node);
+		}
+
 		function drawCluster(hexGroup, size) {
 			var padding = document.getElementById("ExtraSymbols").checked?200:100;
 			var furthestRight = 0;
 			var furthestLeft = 0;
 			var furthestUp = 0;
 			var furthestDown = 0;
-			console.log(hexGroup);
 			for (hexaKey in hexGroup) {
 				hexa = hexGroup[hexaKey];
 				if (hexa.x > 0 && hexa.x > furthestRight) {
@@ -276,7 +293,7 @@
 			}
 			ctx.font = "10px Arial";
 			ctx.fillStyle = "#000000";
-			ctx.fillText(hexGroup.length, 10, 10);
+			//ctx.fillText(hexGroup.length, 10, 10);
 		}
 
 		function drawSolution(head, targetNodes, size, hexagonNode, hexArray) {
