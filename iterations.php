@@ -24,7 +24,7 @@
 			<legend>Options</legend>
 			<div"><label><input type="radio" id="VaultOnly" name="SelectedData" value="vault" <?php if ($_GET["SelectedData"] == 'vaultOnly' || $_GET["SelectedData"] == '') {echo "checked";} ?>></label> <a href="http://helposiris.com/">HelpOsiris.com</a></div><br><br>
 			<div><label><input type="radio" id="VerifiedOnly" name="SelectedData" value="verified" <?php if ($_GET["SelectedData"] == 'verifiedOnly') {echo "checked";} ?>>Explorer's Vault</label> <a href="https://docs.google.com/spreadsheets/d/1Cs-wnM6cJMfL_gpoGzqLiqtQQSEXH_eSR4T-nuyUvNs/edit#gid=0">https://docs.google.com/spreadsheets/d/1Cs-wnM6cJMfL_gpoGzqLiqtQQSEXH_eSR4T-nuyUvNs/edit#gid=0</a></div><br>
-			<div><label><input type="radio" id="MasterOnly" name="SelectedData" value="master"<?php if ($_GET["SelectedData"] == 'masterOnly') {echo "checked";} ?>> Bachmanetti Compilation</label> <a href="https://docs.google.com/spreadsheets/d/1ykaQALnNF4S33ZrLeXF1RSzygCLyHugoZmgoPwogZI0/edit?usp=sharing">https://docs.google.com/spreadsheets/d/1ykaQALnNF4S33ZrLeXF1RSzygCLyHugoZmgoPwogZI0/edit?usp=sharing</a></div><br>
+			<div><label><input type="radio" id="MasterOnly" name="SelectedData" value="master"<?php if ($_GET["SelectedData"] == 'masterOnly') {echo "checked";} ?>> Bachmanetti/Adam Algaert Compilation</label> <a href="https://docs.google.com/spreadsheets/d/1ykaQALnNF4S33ZrLeXF1RSzygCLyHugoZmgoPwogZI0/edit?usp=sharing">https://docs.google.com/spreadsheets/d/1ykaQALnNF4S33ZrLeXF1RSzygCLyHugoZmgoPwogZI0/edit?usp=sharing</a></div><br>
 			<div><label><input type="radio" id="Proof" name="SelectedData" value="proof"<?php if ($_GET["SelectedData"] == 'proof') {echo "checked";} ?>>Proof</label></div><br>
 			<div><label><input type="checkbox" id="ExtraSymbols" name="ExtraSymbols" <?php if ($_GET["ExtraSymbols"] == 'true') {echo "checked";} ?>>Show Side Symbols</label></div><br>
 			<div style="display: none;">Min Cluster Size <input type="number" id="NodeCount" name="NodeCount" placeholder="1" value="<?php echo $_GET["NodeCount"]; ?>"></div><br>
@@ -108,8 +108,6 @@
 					let signature = "";
 					var newSubNodes = [];
 					var newOpenSides = [];
-					var topLeftCorner = [true , true, false, false, true, true];
-					var isTopLeftCorner = true;
 
 					for(i=0; i<6; i++) {
 						// Place sides
@@ -118,9 +116,6 @@
 						if (linkCode == "BBBBBBB" || linkCode == "") {
 							var newSubNode = new SubNode();
 							linkCode = "";
-							if (!topLeftCorner[i]) {
-								isTopLeftCorner = false;
-							}
 						} else {
 							if (linkDict[i+linkCode]) {
 								linkDict[i+linkCode]++;
@@ -128,9 +123,6 @@
 								linkDict[i+linkCode] = 1;
 							}
 							var newSubNode = new SubNode(linkCode);
-							if (topLeftCorner[i]) {
-								isTopLeftCorner = false;
-							}
 						}
 						signature+=linkCode;
 						newSubNodes.push(newSubNode);
@@ -171,9 +163,12 @@
 					var newNode = new Node(data[0].row?data[0].row:data[1], newSubNodes, newOpenSides, newSymbol, corridors);
 					signature = signature.toUpperCase();
 					if (!nodeSignature[signature] && (data[0].status == "Verified" || !data[0].status)) {
-						console.log(getEdgeType(newNode));
 						nodeSignature[signature] = data[1];
-						if (isTopLeftCorner) {
+						if (getEdgeType(newNode) == "topRight" || getEdgeType(newNode) == "topLeft" || getEdgeType(newNode) == "bottomRight" || getEdgeType(newNode) == "bottomLeft") {
+							console.log(getEdgeType(newNode));
+							console.log(newNode);
+						}
+						if (getEdgeType(newNode) == "topLeft") {
 							headNode = newNode;
 						} else {
 							nodes.push(newNode);
@@ -223,7 +218,7 @@
 			  }
 			};
 			if (verifiedOnly) {
-				xmlhttp.open("GET", "https://spreadsheets.google.com/feeds/cells/1h6hoBoudoR0H5OoKHEqhMKxFxLnL4jagY0aqCs7LiRE/2/public/full?alt=json", true);
+				xmlhttp.open("GET", "https://spreadsheets.google.com/feeds/cells/1h6hoBoudoR0H5OoKHEqhMKxFxLnL4jagY0aqCs7LiRE/8/public/full?alt=json", true);
 				xmlhttp.send();
 			} 
 			else if (masterOnly) { 
@@ -241,26 +236,30 @@
 
 		function getEdgeType(node) {
 			edgeType = "none";
-			let edgeData = {
-				topLeftCorner: {pattern: [true , true, false, false, true, true], isTrue: true},
+			var edgeData = {
+				topLeft: {pattern: [true, true, false, false, true, true], isTrue: true},
 				top1: {pattern: [true, false, false, false, false, false], isTrue: true},
 				top2: {pattern: [true, true, false, false, false, true], isTrue: true},
-				bottomRightCorner: {pattern: [false, true, true, true, true, false], isTrue: true},
+				bottomRight: {pattern: [false, true, true, true, true, false], isTrue: true},
 				bottom1: {pattern: [false, false, false, true, false, false], isTrue: true},
 				bottom2: {pattern: [false, false, true, true, true, false], isTrue: true},
 				right: {pattern: [false, true, true, false, false, false], isTrue: true},
-				left: {pattern: [false, false, false, false, true, true], isTrue: true}
+				left: {pattern: [false, false, false, false, true, true], isTrue: true},
+				bottomLeft: {pattern: [false, false, false, true, true, true], isTrue: true},
+				topRight: {pattern: [true, true, true, false, false, false], isTrue: true}
 			}
-			for (let i = 0; i < 6; i++) {
-				for (key in edgeData) {
-					sideType = edgeData[key];
-					sideType.isTrue = sideType.pattern[i];
-					//console.log(!sideType.isTrue);
+			for (key in edgeData) {
+				var sideType = edgeData[key];
+				for (var i=0; i < 6; i++) {
+					var isBlank = node.subNodes[i].code == "";
+					if (isBlank != sideType.pattern[i]) {
+						sideType.isTrue = false;
+					}
 				}
 			}
 			for (key in edgeData) {
 				if (edgeData[key].isTrue) {
-					return edgeType;
+					edgeType = key;
 				}
 			}
 			return edgeType;

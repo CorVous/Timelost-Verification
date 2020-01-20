@@ -24,8 +24,8 @@
 			<legend>Options</legend>
 			<div"><label><input type="radio" id="VaultOnly" name="SelectedData" value="vault" <?php if ($_GET["SelectedData"] == 'vaultOnly' || $_GET["SelectedData"] == '') {echo "checked";} ?>></label> <a href="http://helposiris.com/">HelpOsiris.com</a></div><br><br>
 			<div><label><input type="radio" id="VerifiedOnly" name="SelectedData" value="verified" <?php if ($_GET["SelectedData"] == 'verifiedOnly') {echo "checked";} ?>>Explorer's Vault</label> <a href="https://docs.google.com/spreadsheets/d/1Cs-wnM6cJMfL_gpoGzqLiqtQQSEXH_eSR4T-nuyUvNs/edit#gid=0">https://docs.google.com/spreadsheets/d/1Cs-wnM6cJMfL_gpoGzqLiqtQQSEXH_eSR4T-nuyUvNs/edit#gid=0</a></div><br>
-			<div><label><input type="radio" id="MasterOnly" name="SelectedData" value="master"<?php if ($_GET["SelectedData"] == 'masterOnly') {echo "checked";} ?>> Bachmanetti Compilation</label> <a href="https://docs.google.com/spreadsheets/d/1ykaQALnNF4S33ZrLeXF1RSzygCLyHugoZmgoPwogZI0/edit?usp=sharing">https://docs.google.com/spreadsheets/d/1ykaQALnNF4S33ZrLeXF1RSzygCLyHugoZmgoPwogZI0/edit?usp=sharing</a></div><br>
-			<div style="display: none;"><label><input type="radio" id="Proof" name="SelectedData" value="proof"<?php if ($_GET["SelectedData"] == 'proof') {echo "checked";} ?>>Proof</label></div><br>
+			<div><label><input type="radio" id="MasterOnly" name="SelectedData" value="master"<?php if ($_GET["SelectedData"] == 'masterOnly') {echo "checked";} ?>> Bachmanetti/Adam Algaert Compilation</label> <a href="https://docs.google.com/spreadsheets/d/1ykaQALnNF4S33ZrLeXF1RSzygCLyHugoZmgoPwogZI0/edit?usp=sharing">https://docs.google.com/spreadsheets/d/1ykaQALnNF4S33ZrLeXF1RSzygCLyHugoZmgoPwogZI0/edit?usp=sharing</a></div><br>
+			<div><label><input type="radio" id="Proof" name="SelectedData" value="proof"<?php if ($_GET["SelectedData"] == 'proof') {echo "checked";} ?>>Proof</label></div><br>
 			<div><label><input type="checkbox" id="ExtraSymbols" name="ExtraSymbols" <?php if ($_GET["ExtraSymbols"] == 'true') {echo "checked";} ?>>Show Side Symbols</label></div><br>
 			<div style="display: none;">Min Cluster Size <input type="number" id="NodeCount" name="NodeCount" placeholder="1" value="<?php echo $_GET["NodeCount"]; ?>"></div><br>
 			<!--<div>JSON Import<br><textarea id="JsonInput" name="JsonInput"></textarea></div><br>-->
@@ -171,7 +171,7 @@
 					var newNode = new Node(data[0].row?data[0].row:data[1], newSubNodes, newOpenSides, newSymbol, corridors);
 					signature = signature.toUpperCase();
 					if (!nodeSignature[signature] && (data[0].status == "Verified" || !data[0].status)) {
-						//console.log(getEdgeType(newNode));
+						console.log(getEdgeType(newNode));
 						nodeSignature[signature] = data[1];
 						if (isTopLeftCorner) {
 							headNode = newNode;
@@ -241,7 +241,7 @@
 
 		function getEdgeType(node) {
 			edgeType = "none";
-			let edgeData = {
+			var edgeData = {
 				topLeftCorner: {pattern: [true , true, false, false, true, true], isTrue: true},
 				top1: {pattern: [true, false, false, false, false, false], isTrue: true},
 				top2: {pattern: [true, true, false, false, false, true], isTrue: true},
@@ -251,12 +251,15 @@
 				right: {pattern: [false, true, true, false, false, false], isTrue: true},
 				left: {pattern: [false, false, false, false, true, true], isTrue: true}
 			}
-			for (let i = 0; i < 6; i++) {
-				for (key in edgeData) {
-					sideType = edgeData[key];
-					sideType.isTrue = sideType.pattern[i];
-					//console.log(!sideType.isTrue);
+			for (key in edgeData) {
+				var sideType = edgeData[key];
+				for (var i=0; i < 6; i++) {
+					var isBlank = node.subNodes[i].code == "";
+					//console.log(isBlank);
+					//console.log(node.subNodes[i].code +"|"+isBlank);
+					sideType.isTrue = isBlank == sideType.pattern[i];
 				}
+				//console.log(sideType.isTrue);
 			}
 			for (key in edgeData) {
 				if (edgeData[key].isTrue) {
