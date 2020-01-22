@@ -42,7 +42,6 @@
 				this.subNodes = subNodes;
 				this.openSides = openSides;
 				this.symbol = symbol;
-				this.corridorLink = corridorLink;
 			}
 		}
 
@@ -159,8 +158,7 @@
 					}
 					signature+=newSymbol;
 
-					var corridors = "https://tjl.co/corridors-of-time/viewer.html#"+btoa(JSON.stringify(data));
-					var newNode = new Node(data[0].row?data[0].row:data[1], newSubNodes, newOpenSides, newSymbol, corridors);
+					var newNode = new Node(data[0].row?data[0].row:data[1], newSubNodes, newOpenSides, newSymbol);
 					signature = signature.toUpperCase();
 					if (!nodeSignature[signature] && (data[0].status == "Verified" || !data[0].status)) {
 						nodeSignature[signature] = data[1];
@@ -181,14 +179,12 @@
 				nodes = shuffle(nodes);
 
 				var canvasNum = 1;
-				var cluster = [];
 
 				var head = headNode;
 				head.x = 0;
 				head.y = 0;
 
 				var preNodeLength = nodes.length;
-				var hexagonNode = [];
 				var simpleSubNodes = [];
 				var hexArrayPiece = [];
 				head.subNodes.forEach(function(subNode) {
@@ -199,9 +195,7 @@
 				head.positionY = 0;
 
 				hexArrayPiece[head.positionX + "," + head.positionY] = head;
-				hexagonNode.push([head.x, head.y, head.openSides, head.symbol, head.id, head.corridorLink, size, simpleSubNodes]);
-				drawSolution(head, nodes, size, hexagonNode, hexArrayPiece);
-				cluster.push(hexagonNode);
+				drawSolution(head, nodes, size, hexArrayPiece);
 				hexArray.push(hexArrayPiece);
 				//console.log(hexArray);
 				canvasNum++;
@@ -308,15 +302,14 @@
 				hexa = hexGroup[hexaKey];
 				hexa.x += offsetX;
 				hexa.y += offsetY;
-				//drawHexa(hexa.x+offsetX, hexa.y+offsetY, hexa[2], hexa[3], ctx, hexa[4], hexa[5], hexa[6], hexa[7], hexa[8]);
 				drawHexagon(hexa, ctx, size);
 			}
-			ctx.font = "10px Arial";
-			ctx.fillStyle = "#000000";
+			// ctx.font = "10px Arial";
+			// ctx.fillStyle = "#000000";
 			//ctx.fillText(hexGroup.length, 10, 10);
 		}
 
-		function drawSolution(head, targetNodes, size, hexagonNode, hexArray) {
+		function drawSolution(head, targetNodes, size, hexArray) {
 			for (var i=0; i<targetNodes.length; i++) {
 				nodeTested = targetNodes[i];
 				newX = head.x;
@@ -421,9 +414,8 @@
 							nodeTested.subNodes.forEach(function(subNode) {
 								simpleSubNodes.push(subNode.code);
 							});
-							hexagonNode.push([nodeTested.x, nodeTested.y, nodeTested.openSides, nodeTested.symbol, nodeTested.id, nodeTested.corridorLink, size, simpleSubNodes]);
 						} catch (e) {}
-						drawSolution(nodeTested, targetNodes, size, hexagonNode, hexArray);
+						drawSolution(nodeTested, targetNodes, size, hexArray);
 					} else {
 						nodeTested.subNodes.forEach(function(subNode) {
 							subNode.linkedNode = null;
