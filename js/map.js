@@ -1,84 +1,66 @@
-function drawSolution(head, targetNodes, size, hexArray) {
+function drawSolution(head, targetNodes, size, hexArray, linkDict) {
   for (let i=0; i<targetNodes.length; i++) {
     nodeTested = targetNodes[i];
-    newX = head.x;
-    newY = head.y;
-    let moveSize = size + 2;
-    let moveY = moveSize * Math.sqrt(3);
-    let moveX = moveSize + moveSize/2;
 
     let foundMatch = false;
-    let headXEven = (head.positionX % 2) == 0;
+    let headXEven = (head.x % 2) == 0;
     let sideConcat;
     if (!head.subNodes[0].linkedNode && (head.subNodes[0].code || nodeTested.subNodes[3].code) && head.subNodes[0].code == nodeTested.subNodes[3].code) {
-      newPositionX = head.positionX;
-      newPositionY = head.positionY -1;
+      newx = head.x;
+      newy = head.y -1;
 
       head.subNodes[0].linkedNode = targetNodes.splice(i,1);
       nodeTested.subNodes[3].linkedNode = head;
       foundMatch = true;
-      newY = newY - moveY;
       sideConcat = 0 + head.subNodes[0].code;
     } else if (!head.subNodes[1].linkedNode && (head.subNodes[1].code || nodeTested.subNodes[4].code)  && head.subNodes[1].code == nodeTested.subNodes[4].code) {
-      newPositionX = head.positionX + 1;
-      newPositionY = head.positionY - (headXEven?1:0);
+      newx = head.x + 1;
+      newy = head.y - (headXEven?1:0);
 
       head.subNodes[1].linkedNode = targetNodes.splice(i,1);
       nodeTested.subNodes[4].linkedNode = head;
       foundMatch = true;
-      newX = newX + moveX;
-      newY = newY - (moveY/2);
       sideConcat = 1 + head.subNodes[1].code;
     } else if (!head.subNodes[2].linkedNode && (head.subNodes[2].code || nodeTested.subNodes[5].code)  && head.subNodes[2].code == nodeTested.subNodes[5].code) {
-      newPositionX = head.positionX + 1;
-      newPositionY = head.positionY + (!headXEven?1:0);
+      newx = head.x + 1;
+      newy = head.y + (!headXEven?1:0);
 
       head.subNodes[2].linkedNode = targetNodes.splice(i,1);
       nodeTested.subNodes[5].linkedNode = head;
       foundMatch = true;
-      newX = newX + moveX;
-      newY = newY + (moveY/2);
       sideConcat = 2 + head.subNodes[2].code;
     } else if (!head.subNodes[3].linkedNode && (head.subNodes[3].code || nodeTested.subNodes[0].code)  && head.subNodes[3].code == nodeTested.subNodes[0].code) {
-      newPositionX = head.positionX;
-      newPositionY = head.positionY + 1;
+      newx = head.x;
+      newy = head.y + 1;
 
       head.subNodes[3].linkedNode = targetNodes.splice(i,1);
       nodeTested.subNodes[0].linkedNode = head;
       foundMatch = true;
-      newY = newY + moveY;
       sideConcat = 3 + head.subNodes[3].code;
     } else if (!head.subNodes[4].linkedNode && (head.subNodes[4].code || nodeTested.subNodes[1].code)  && head.subNodes[4].code == nodeTested.subNodes[1].code) {
-      newPositionX = head.positionX - 1;
-      newPositionY = head.positionY + (!headXEven?1:0);
+      newx = head.x - 1;
+      newy = head.y + (!headXEven?1:0);
 
       head.subNodes[4].linkedNode = targetNodes.splice(i,1);
       nodeTested.subNodes[1].linkedNode = head;
       foundMatch = true;
-      newX = newX - moveX;
-      newY = newY + (moveY/2);
       sideConcat = 4 + head.subNodes[4].code;
     } else if (!head.subNodes[5].linkedNode && (head.subNodes[5].code || nodeTested.subNodes[2].code)  && head.subNodes[5].code == nodeTested.subNodes[2].code) {
-      newPositionX = head.positionX - 1;
-      newPositionY = head.positionY - (headXEven?1:0);
+      newx = head.x - 1;
+      newy = head.y - (headXEven?1:0);
 
       head.subNodes[5].linkedNode = targetNodes.splice(i,1);
       nodeTested.subNodes[2].linkedNode = head;
       foundMatch = true;
-      newX = newX - moveX;
-      newY = newY - (moveY/2);
       sideConcat = 5 + head.subNodes[5].code;
     }
 
     sideIsUnique = linkDict[sideConcat] == 1;
 
-
     if (foundMatch) {
-      nodeTested.positionX = newPositionX;
-      nodeTested.positionY = newPositionY;
-      nodeTested.x = newX;
-      nodeTested.y = newY;
-      let hexKey = nodeTested.positionX + "," + nodeTested.positionY;
+      nodeTested.x = newx;
+      nodeTested.y = newy;
+      let hexKey = nodeTested.x + "," + nodeTested.y;
       if (typeof hexArray[hexKey] !== 'undefined') {
         //hexArray[hexKey].push(nodeTested);
         targetNodes.push(nodeTested);
@@ -98,13 +80,7 @@ function drawSolution(head, targetNodes, size, hexArray) {
         conflictLog("----------------");
       } else if (arrayCheckSides(nodeTested, hexArray, sideIsUnique) && validPlacement(nodeTested)) {
         hexArray[hexKey] = nodeTested;
-        try {
-          let simpleSubNodes = [];
-          nodeTested.subNodes.forEach(function(subNode) {
-            simpleSubNodes.push(subNode.code);
-          });
-        } catch (e) {}
-        drawSolution(nodeTested, targetNodes, size, hexArray);
+        drawSolution(nodeTested, targetNodes, size, hexArray, linkDict);
       } else {
         nodeTested.subNodes.forEach(function(subNode) {
           subNode.linkedNode = null;
@@ -117,7 +93,7 @@ function drawSolution(head, targetNodes, size, hexArray) {
 
 // Check sides against Hexagon Graph
 function arrayCheckSides(node, hexArray, sideIsUnique) {
-  let headXEven = (node.positionX % 2) == 0;
+  let headXEven = (node.x % 2) == 0;
   let hasTrue = [];
   let hasSide = [];
   let currentNeighbors = 0;
@@ -126,22 +102,22 @@ function arrayCheckSides(node, hexArray, sideIsUnique) {
     let k = (i+3) % 6;
     switch(i) {
       case 0:
-        hexKey = node.positionX+","+(node.positionY-1);
+        hexKey = node.x+","+(node.y-1);
         break;
       case 1:
-        hexKey = (node.positionX + 1)+","+(node.positionY - (headXEven?1:0));
+        hexKey = (node.x + 1)+","+(node.y - (headXEven?1:0));
         break;
       case 2:
-        hexKey = (node.positionX + 1)+","+(node.positionY + (!headXEven?1:0));
+        hexKey = (node.x + 1)+","+(node.y + (!headXEven?1:0));
         break;
       case 3:
-        hexKey = node.positionX+","+(node.positionY+1);
+        hexKey = node.x+","+(node.y+1);
         break;
       case 4:
-        hexKey = (node.positionX - 1)+","+(node.positionY + (!headXEven?1:0));
+        hexKey = (node.x - 1)+","+(node.y + (!headXEven?1:0));
         break;
       case 5:
-        hexKey = (node.positionX - 1)+","+(node.positionY - (headXEven?1:0));
+        hexKey = (node.x - 1)+","+(node.y - (headXEven?1:0));
         break;
     }
     let side = hexArray[hexKey];
@@ -215,37 +191,37 @@ function validPlacement(node) {
 
   switch(edgeType) {
     case "topLeft":
-      isValid = node.positionX == 0 && node.positionY == 0;
+      isValid = node.x == 0 && node.y == 0;
       break;
     case "bottomRight":
-      isValid = node.positionX == width-1 && node.positionY == height-1;
+      isValid = node.x == width-1 && node.y == height-1;
       break;
     case "bottomLeft":
-      isValid = node.positionX == 0 && node.positionY == height-1;
+      isValid = node.x == 0 && node.y == height-1;
       break;
     case "topRight":
-      isValid = node.positionX == width-1 && node.positionY == 0;
+      isValid = node.x == width-1 && node.y == 0;
       break;
     case "top1":
-      isValid  = node.positionX%2 == 1 && node.positionY == 0;
+      isValid  = node.x%2 == 1 && node.y == 0;
       break;
     case "top2":
-      isValid  = node.positionX%2 == 0 && node.positionY == 0;
+      isValid  = node.x%2 == 0 && node.y == 0;
       break;
     case "bottom1":
-      isValid  = node.positionX%2 == 0 && node.positionY == height-1;
+      isValid  = node.x%2 == 0 && node.y == height-1;
       break;
     case "bottom2":
-      isValid  = node.positionX%2 == 1 && node.positionY == height-1;
+      isValid  = node.x%2 == 1 && node.y == height-1;
       break;
     case "right":
-      isValid  = node.positionX == width-1;
+      isValid  = node.x == width-1;
       break;
     case "left":
-      isValid = node.positionX == 0;
+      isValid = node.x == 0;
       break;
     default:
-      isValid = node.positionX > 0 && node.positionX < width-1 && node.positionY > 0 && node.positionY < height-1;
+      isValid = node.x > 0 && node.x < width-1 && node.y > 0 && node.y < height-1;
       break;
   }
   return isValid;

@@ -1,21 +1,23 @@
-function drawCluster(hexGroup, size) {
+function drawCluster(hexGroup, size, spacing) {
   let padding = document.getElementById("ExtraSymbols").checked?200:100;
   let furthestRight = 0;
   let furthestLeft = 0;
   let furthestUp = 0;
   let furthestDown = 0;
+
   for (hexaKey in hexGroup) {
     hexa = hexGroup[hexaKey];
-    if (hexa.x > 0 && hexa.x > furthestRight) {
-      furthestRight = hexa.x;
-    } else if (hexa.x < 0 && hexa.x < furthestLeft) {
-      furthestLeft = hexa.x;
+    let coordinates = determineCoordinates(hexa, size, spacing);
+    if (coordinates.x > 0 && coordinates.x > furthestRight) {
+      furthestRight = coordinates.x;
+    } else if (coordinates.x < 0 && coordinates.x < furthestLeft) {
+      furthestLeft = coordinates.x;
     }
 
-    if (hexa.y > 0 && hexa.y > furthestDown) {
-      furthestDown = hexa.y;
-    } else if (hexa.y < 0 && hexa.y < furthestUp) {
-      furthestUp = hexa.y;
+    if (coordinates.y > 0 && coordinates.y > furthestDown) {
+      furthestDown = coordinates.y;
+    } else if (coordinates.y < 0 && coordinates.y < furthestUp) {
+      furthestUp = coordinates.y;
     }
   }
   let offsetX = -furthestLeft + (padding/2);
@@ -39,29 +41,36 @@ function drawCluster(hexGroup, size) {
 
   for (hexaKey in hexGroup) {
     hexa = hexGroup[hexaKey];
-    hexa.x += offsetX;
-    hexa.y += offsetY;
-    drawHexagon(hexa, ctx, size);
+    let coordinates = determineCoordinates(hexa, size, spacing);
+    drawHexagon(hexa, coordinates.x + offsetX, coordinates.y + offsetY, ctx, size);
   }
   // ctx.font = "10px Arial";
   // ctx.fillStyle = "#000000";
   //ctx.fillText(hexGroup.length, 10, 10);
 }
 
+function determineCoordinates(hexagon, size, spacing) {
+  let moveSize = size + spacing;
+  return {
+    x: hexagon.x * (moveSize + (moveSize / 2)),
+    y: hexa.y * (moveSize * Math.sqrt(3)) + ((hexa.x%2 == 0)?0:((moveSize * Math.sqrt(3))/2))
+  }
+}
+
 // hexagon
-function drawHexagon(hexagon, ctx, size) {
+function drawHexagon(hexagon, x, y, ctx, size) {
   sides = document.getElementById("ExtraSymbols").checked;
   let numberOfSides = 6,
-      Xcenter = hexagon.x,
-      Ycenter = hexagon.y;
+      Xcenter = x,
+      Ycenter = y;
   if (hexagon.symbol) {
     let img = new Image();
     img.src = "/cot/img/"+hexagon.symbol+".png";
-    let imgSize = sides?26:15;
+    let imgSize = size;
     let savectx = ctx;
     img.onload = function() {
       try {
-        savectx.drawImage(img, hexagon.x-imgSize/2, hexagon.y-imgSize/2, imgSize, imgSize);
+        savectx.drawImage(img, x-imgSize/2, y-imgSize/2, imgSize, imgSize);
       } catch(e) {
         return;
       }
@@ -69,45 +78,45 @@ function drawHexagon(hexagon, ctx, size) {
   }
   // ctx.fillStyle = "#000000";
   // ctx.font = "10px Arial";
-  // ctx.fillText("(" + hexagon.positionX + "," + hexagon.positionY + ")", hexagon.x-10, hexagon.y);
+  // ctx.fillText("(" + hexagon.x + "," + hexagon.y + ")", x-10, y);
 
   if (sides) {
         ctx.font = "10px Arial";
       ctx.save();
 
         ctx.fillStyle = "#cc4444"
-      ctx.fillText(hexa.subNodes[0].code, hexagon.x-25, hexagon.y-58);
+      ctx.fillText(hexa.subNodes[0], x-25, y-58);
 
       ctx.restore();
       ctx.fillStyle = "#88cc88"
-      for(let i=0; i<hexagon.subNodes[1].code.length; i++) {
-        let chara = hexagon.subNodes[1].code[i];
-        ctx.fillText(chara, hexagon.x+31+(i*5), hexagon.y-60+(i*9));
+      for(let i=0; i<hexagon.subNodes[1].length; i++) {
+        let chara = hexagon.subNodes[1][i];
+        ctx.fillText(chara, x+31+(i*5), y-60+(i*9));
       }
 
       ctx.restore();
         ctx.fillStyle = "#cc4444"
-      for(let i=0; i<hexagon.subNodes[2].code.length; i++) {
-        let chara = hexagon.subNodes[2].code[i];
-        ctx.fillText(chara, hexagon.x+35+(i*5), hexagon.y+65-(i*9));
+      for(let i=0; i<hexagon.subNodes[2].length; i++) {
+        let chara = hexagon.subNodes[2][i];
+        ctx.fillText(chara, x+35+(i*5), y+65-(i*9));
       }
 
       ctx.restore();
       ctx.fillStyle = "#44cc44"
-      ctx.fillText(hexagon.subNodes[3].code, hexagon.x-25, hexagon.y+65);
+      ctx.fillText(hexagon.subNodes[3], x-25, y+65);
 
       ctx.restore();
         ctx.fillStyle = "#cc4444"
-      for(let i=0; i<hexagon.subNodes[4].code.length; i++) {
-        let chara = hexagon.subNodes[4].code[i];
-        ctx.fillText(chara, hexagon.x-72+(i*5), hexagon.y+10+(i*9));
+      for(let i=0; i<hexagon.subNodes[4].length; i++) {
+        let chara = hexagon.subNodes[4][i];
+        ctx.fillText(chara, x-72+(i*5), y+10+(i*9));
       }
 
       ctx.restore();
       ctx.fillStyle = "#44cc44"
-      for(let i=0; i<hexagon.subNodes[5].code.length; i++) {
-        let chara = hexagon.subNodes[5].code[i];
-        ctx.fillText(chara, hexagon.x-70+(i*5), hexagon.y-6-(i*9));
+      for(let i=0; i<hexagon.subNodes[5].length; i++) {
+        let chara = hexagon.subNodes[5][i];
+        ctx.fillText(chara, x-70+(i*5), y-6-(i*9));
       }
 
       ctx.restore();
@@ -131,7 +140,7 @@ function drawHexagon(hexagon, ctx, size) {
     currentY = nextY;
     ctx.lineWidth = 1;
 
-    if (hexagon.subNodes[((i+7) % 6)].code == "") {
+    if (hexagon.subNodes[((i+7) % 6)] == "") {
       ctx.strokeStyle = "#00ff00";
       if (hexagon.openSides.includes(((i+7) % 6) + 1)) {
         ctx.lineWidth = 3;

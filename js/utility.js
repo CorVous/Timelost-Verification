@@ -1,17 +1,21 @@
 function processData(dataTest) {
   let hexNodes = [];
   let hexSignatures = [];
+  let linkDict = {};
   let head;
   let id = 0;
   dataTest.data.forEach(function(data) {
     if (data.length == 11) {
-      let convertedNode = convertToNode(id, data);
+      let convertedNode = convertToNode(id, data, linkDict);
       let newNode = convertedNode[0];
       let signature = convertedNode[1];
+      linkDict = convertedNode[2];
       if (!hexSignatures[signature]) {
         hexSignatures[signature] = id;
         if (getEdgeType(newNode) == "topLeft") {
           head = newNode;
+          head.x = 0;
+          head.y = 0;
         } else {
           hexNodes.push(newNode);
         }
@@ -23,10 +27,10 @@ function processData(dataTest) {
       id++;
     }
   });
-  return [hexNodes, hexSignatures, head];
+  return [hexNodes, head, linkDict];
 }
 
-function convertToNode(id, data) {
+function convertToNode(id, data, linkDict) {
   let signature = "";
   let newSubNodes = [];
 
@@ -39,8 +43,8 @@ function convertToNode(id, data) {
   for(i=0; i<6; i++) {
     // Place sides
     linkCode = data[i+3];
+    let newSubNode = new SubNode();
     if (linkCode == "BBBBBBB" || linkCode == "") {
-      var newSubNode = new SubNode();
       linkCode = "";
       signature+="BBBBBBB";
     } else {
@@ -49,19 +53,19 @@ function convertToNode(id, data) {
       } else {
         linkDict[i+linkCode] = 1;
       }
-      newSubNode = new SubNode(linkCode);
+      newSubNode.code = linkCode;
     }
     signature+=linkCode;
     newSubNodes.push(newSubNode);
   }
 
-  var dataSymbol = data[1].toLowerCase().trim()
-  var newSymbol = dataSymbol == "blank"?null:dataSymbol;
+  let dataSymbol = data[1].toLowerCase().trim()
+  let newSymbol = dataSymbol == "blank"?null:dataSymbol;
   signature+=newSymbol;
 
-  var newNode = new Node(id, newSubNodes, newOpenSides, newSymbol);
+  let newNode = new Node(id, newSubNodes, newOpenSides, newSymbol, data[0]);
   signature = signature.toUpperCase();
-  return [newNode, signature]
+  return [newNode, signature, linkDict]
 }
 
 function shuffle(array) {
@@ -86,4 +90,12 @@ function shuffle(array) {
 function conflictLog(conflict) {
   document.getElementById("conflicts").innerHTML += conflict + "\n";
   //console.log(conflict);
+}
+
+function download(content, fileName, contentType) {
+    var a = document.createElement("a");
+    var file = new Blob([content], {type: contentType});
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    a.click();
 }

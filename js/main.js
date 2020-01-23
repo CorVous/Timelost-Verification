@@ -1,9 +1,10 @@
 class Node {
-	constructor(id, subNodes, openSides, symbol=null, corridorLink) {
+	constructor(id, subNodes, openSides, symbol=null, img) {
 		this.id = id;
 		this.subNodes = subNodes;
 		this.openSides = openSides;
 		this.symbol = symbol;
+		this.img = img;
 	}
 }
 
@@ -14,64 +15,64 @@ class SubNode {
 	}
 }
 
-let linkDict = {};
-let hexArray = [];
-
 function load() {
 	let sideSymbols = document.getElementById("ExtraSymbols").checked;
-	let clusterSize = document.getElementById("NodeCount").value?document.getElementById("NodeCount").value:1;
 	document.getElementById("canvases").innerHTML = "";
 	document.getElementById("load-button").style.display = "none";
 	document.getElementById("conflicts").style.display = "none";
 	document.getElementById("conflicts").innerHTML = "";
-	let dataTest = [];
-	let nodes = [];
-	let nodeSignature = {};
 	let size = sideSymbols? 80 : 15;
-	hexArray = [];
-	let conflictErrors = "";
-	linkDict = {};
+	let spacing = 2;
 
 	Papa.parse("cot.csv", {
 		download: true,
 		complete: function(data) {
 
-	    let processedData = processData(data);
+		let hexArrayFull = [];
 
-	    let head = processedData[2];
-	    nodes = shuffle(processedData[0]);
-	    nodeSignature = processedData[1];
+		let hexArrayLength = 0;
+		while(hexArrayLength < 5040) {
+		    let processedData = processData(data);
+		    let head = processedData[1];
+		    let linkDict = processedData[2];
+		    
+	    	let nodes = processedData[0].sort(() => Math.random() - 0.5);
+	    	let hexArrayPiece = [];
 
-			var canvasNum = 1;
+			hexArrayPiece[head.x + "," + head.y] = head;
+			drawSolution(head, nodes, size, hexArrayPiece, linkDict);
 			
-			head.x = 0;
-			head.y = 0;
+			hexArrayFull = Object.assign({}, hexArrayFull, hexArrayPiece);
 
-			var preNodeLength = nodes.length;
-			var simpleSubNodes = [];
-			var hexArrayPiece = [];
-			head.subNodes.forEach(function(subNode) {
-				simpleSubNodes.push(subNode.code);
-			});
-			
-			head.positionX = 0;
-			head.positionY = 0;
+			hexArrayLength = 0;
+			for (let key in hexArrayFull) {
+				hexArrayLength++;
+			}
+			console.log("Current Hex Array Length: "+hexArrayLength);
+	    }
 
-			hexArrayPiece[head.positionX + "," + head.positionY] = head;
-			drawSolution(head, nodes, size, hexArrayPiece);
-			hexArray.push(hexArrayPiece);
-			//console.log(hexArray);
-			canvasNum++;
+		// Draw
+		let canvasHexagonArray = [];
+		for (let key in hexArrayFull) {
+			let node = hexArrayFull[key];
+			let hexagon = {
+				id: node.id,
+				symbol: node.symbol,
+				openSides: node.openSides,
+				subNodes: [node.subNodes[0].code, node.subNodes[1].code, node.subNodes[2].code, node.subNodes[3].code, node.subNodes[4].code, node.subNodes[5].code],
+				img: node.img,
+				x: node.x,
+				y: node.y
+			}
+			canvasHexagonArray.push(hexagon);
+		}
 
-			// Draw
-			hexArray.forEach(function(hexGroup){
-				if (!clusterSize && hexGroup.length > 1 || hexArray.length >= clusterSize) {
-					drawCluster(hexGroup, size);
-				}
-			});
+		drawCluster(canvasHexagonArray, size, spacing);
 
-			document.getElementById("load-button").style.display = "block";
-			document.getElementById("conflicts").style.display = "block";
+		//download(JSON.stringify(canvasHexagonArray), 'map-data.json', 'text/plain');
+
+		document.getElementById("load-button").style.display = "block";
+		document.getElementById("conflicts").style.display = "block";
 		}
 	});
 }
