@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Cor_Vous Corridor Solution Full</title>
+	<meta name="viewport" content="initial-scale=1">
+	<meta charset="UTF-8">
+</head>
+
+<body>
+	<div>
+		<img id="cauldron" src="img/cauldron.png" />
+		<img id="clover" src="img/clover.png" />
+		<img id="diamond" src="img/diamond.png" />
+		<img id="hex" src="img/hex.png" />
+		<img id="plus" src="img/plus.png" />
+		<img id="snake" src="img/snake.png" />
+	</div>
+	<p>@Cor_Vous Corridor Vault Solver</p>
+	<h4><a href="">[Refresh]</a></h4>
+	<h4><a href="https://docs.google.com/forms/d/e/1FAIpQLSefykUlA4O6gBs3NE1IMwMeTPkH3bFEU0MlFtpcHobdz-RVTA/viewform">[Submit Data Here]</a></h4>
+	<form>
+		<fieldset>
+			<legend>Options</legend>
+			<div><label><input type="checkbox" id="ExtraSymbols" name="ExtraSymbols">Show Side Symbols</label></div><br>
+			<div style="display: none;">Min Cluster Size <input type="number" id="NodeCount" name="NodeCount" placeholder="1"></div><br>
+			<!--<div>JSON Import<br><textarea id="JsonInput" name="JsonInput"></textarea></div><br>-->
+			<input id="load-button" type="button" onclick="load()" value="Load Data">
+		</fieldset>
+	</form>
+	<textarea style="display: none;" id="conflicts" cols="100" rows="10"></textarea>
+	<br>
+	<div id="canvases"></div>
+	<script src="js/papaparse.min.js"></script>
+	<script src="js/canvas.js"></script>
+	<script src="js/utility.js"></script>
+	<script src="js/map.js"></script>
+	<script src="js/main.js"></script>
+</body>
+
+</html>
